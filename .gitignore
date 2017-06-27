@@ -1,0 +1,8 @@
+# Avoid IntelliJ IDEA metadata.
+.idea
+
+# Avoid IntelliJ IDEA project configuration xml.
+JEdit.iml
+
+# Avoid compiled project.
+out
