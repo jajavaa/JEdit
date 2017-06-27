@@ -4,6 +4,9 @@
 # out/
 out/
 
+# JEdit.iml
+JEdit.iml
+
 # Log file
 *.log
 
