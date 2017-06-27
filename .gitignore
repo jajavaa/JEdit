@@ -2,11 +2,9 @@
 .idea/
 # Avoid compiled project.
 out/
+
 # Avoid IntelliJ IDEA project configuration xml.
 JEdit.iml
-
-# Compiled class file
-*.class
 
 # Log file
 *.log
