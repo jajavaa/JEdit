@@ -1,10 +1,13 @@
-package jeditor;
+package editor;
 
 import javafx.fxml.FXML;
 
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+
+import javafx.scene.Scene;
+
+import javafx.scene.control.*;
 
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -12,8 +15,12 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import javafx.scene.paint.Color;
+
+import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,30 +35,35 @@ import java.util.Scanner;
 
 public class Controller {
 
-
     private String charset = "utf8";
     private String original = "";
     @FXML private GridPane window;
     @FXML private TextArea editor;
     @FXML private TextField file;
     @FXML private Label status;
+    @FXML private ComboBox<String> lang;
 
     public void initialize() {
+        lang.getItems().addAll("Java", "PHP", "JavaScript", "HTML", "CSS");
         file.setOnAction(event -> read());
         arguments();
     }
 
     private void arguments() {
+        KeyCombination[] keyCombinations = {
+                new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN),
+                new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN)
+        };
         if(getArgs().indexOf("--no-combo") == -1) {
-            KeyCombination[] keyCombinations = {
-                    new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN),
-            };
             window.addEventHandler(KeyEvent.KEY_RELEASED, event -> {
                 for (int j = 0; j < keyCombinations.length; j++) {
                     if (keyCombinations[j].match(event)) {
                         switch (j) {
                             case 0:
                                 save();
+                                break;
+                            case 1:
+                                find();
                                 break;
                         }
                     }
@@ -81,6 +93,30 @@ public class Controller {
         }
     }
 
+    private void find(String text, boolean caseSensitive) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    private void find() {
+        final Stage stage = new Stage();
+        final VBox vBox = new VBox(10);
+        final CheckBox caseSensitive = new CheckBox("Match Case");
+        final TextField find = new TextField();
+        final HBox hBox = new HBox(10);
+        final Button button = new Button("Find");
+
+        vBox.setAlignment(Pos.CENTER);
+        vBox.setPadding(new Insets(15));
+
+        find.setOnAction(event -> find(find.getText(), caseSensitive.isSelected()));
+        button.setOnAction(event -> find(find.getText(), caseSensitive.isSelected()));
+
+        hBox.getChildren().addAll(caseSensitive, button);
+        vBox.getChildren().addAll(find, hBox);
+
+        stage.setScene(new Scene(vBox));
+        stage.show();
+    }
 
     public void save() {
         String files = home(file.getText());

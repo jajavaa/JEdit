@@ -1,6 +1,8 @@
-package jeditor;
+package editor;
 
 import javafx.application.Application;
+
+import javafx.application.Platform;
 
 import javafx.fxml.FXMLLoader;
 
@@ -26,11 +28,11 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws IOException {
         setArgs(getParameters().getUnnamed());
-        Image icon = new Image(getClass().getResourceAsStream("download.jpg"));
+        final Image icon = new Image(getClass().getResourceAsStream("icon.jpg"));
         primaryStage.setTitle("JEditor");
-        primaryStage.setResizable(false);
         primaryStage.getIcons().add(icon);
         primaryStage.setScene(new Scene(FXMLLoader.load(getClass().getResource("editor.fxml"))));
+        primaryStage.setOnHidden(e -> Platform.exit());
         primaryStage.show();
         stage = primaryStage;
     }
