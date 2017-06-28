@@ -93,6 +93,7 @@ public class Controller {
         }
     }
 
+    @SuppressWarnings("unused")
     private void find(String text, boolean caseSensitive) {
         throw new UnsupportedOperationException("Not implemented");
     }
