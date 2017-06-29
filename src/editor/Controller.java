@@ -37,6 +37,17 @@ public class Controller {
 
     private String charset = "utf8";
     private String original = "";
+    private String[] supportedLang = {
+            "Java",
+            "PHP",
+            "JavaScript",
+            "CSS",
+            "HTML",
+    };
+    private String[] text = {
+            "",
+            "txt"
+    };
     @FXML private GridPane window;
     @FXML private TextArea editor;
     @FXML private TextField file;
@@ -44,7 +55,7 @@ public class Controller {
     @FXML private ComboBox<String> lang;
 
     public void initialize() {
-        lang.getItems().addAll("Java", "PHP", "JavaScript", "HTML", "CSS");
+        lang.getItems().addAll(supportedLang);
         file.setOnAction(event -> read());
         arguments();
     }
@@ -70,14 +81,15 @@ public class Controller {
                 }
             });
         } else System.out.println("Combo off.");
-        if(getArgs().indexOf("--no-save-prompt") == -1) {
-            editor.textProperty().addListener((observable, oldValue, newValue) -> {
-                if (original.equals(editor.getText()))
-                    setNotEdited();
-                else
-                    setEdited();
-            });
-        } else System.out.println("Save prompt off.");
+//        This code causes an exception
+//        if(getArgs().indexOf("--no-save-prompt") == -1) {
+//            editor.textProperty().addListener((observable, oldValue, newValue) -> {
+//                if (original.equals(editor.getText()))
+//                    setNotEdited();
+//                else
+//                    setEdited();
+//            });
+//        } else System.out.println("Save prompt off.");
         int x;
         if((x = getArgs().indexOf("-f")) != -1 || (x = getArgs().indexOf("--file")) != -1) {
             read(getArgs().get(x+1));
@@ -95,6 +107,7 @@ public class Controller {
 
     @SuppressWarnings("unused")
     private void find(String text, boolean caseSensitive) {
+//        To be implemented.
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -154,6 +167,7 @@ public class Controller {
                 file.setText(path);
                 original = sb.toString();
                 setStatus("File read: " + path);
+                setLang(path);
             } catch (FileNotFoundException e) {
                 setStatus(e);
             } finally {
@@ -170,11 +184,11 @@ public class Controller {
             try {
                 reader = new Scanner(new File(home(file.getText())), charset);
                 while (reader.hasNextLine())
-                    sb.append(reader.nextLine()).append("\n");
-                sb.setLength(sb.length() - 1);
+                    sb.append("\n").append(reader.nextLine());
                 setTitle(home(file.getText()));
-                editor.setText(sb.toString());
+                editor.setText(sb.toString().replaceFirst("[\n]", ""));
                 original = sb.toString();
+                setLang(file.getText());
                 setStatus("File read: " + file.getText());
             } catch (FileNotFoundException e) {
                 setStatus(e);
@@ -185,6 +199,21 @@ public class Controller {
         }
     }
 
+    private void setLang(String path) {
+        String[] ext = path.split("[.]");
+        for(String lang: text) {
+            if(lang.equalsIgnoreCase(ext[ext.length-1])) {
+                this.lang.getSelectionModel().select("Plain");
+                return;
+            }
+        }
+        for(String lang: supportedLang) {
+            if(lang.equalsIgnoreCase(ext[ext.length-1])) {
+                this.lang.getSelectionModel().select(lang);
+                return;
+            }
+        }
+    }
     private String home(String url) {
         return url.startsWith("~") ? url.replaceFirst("[~]", System.getProperty("user.home")) : url;
     }
