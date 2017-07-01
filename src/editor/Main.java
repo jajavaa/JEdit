@@ -37,18 +37,8 @@ public class Main extends Application {
         stage = primaryStage;
     }
 
-    static void setTitle(String file) {
-        stage.setTitle("JEditor - " + file);
-    }
-
-    static void setEdited() {
-        if(!stage.getTitle().endsWith("*"))
-            stage.setTitle(stage.getTitle() + "*");
-    }
-
-    static void setNotEdited() {
-        if(stage.getTitle().endsWith("*"))
-            stage.setTitle(stage.getTitle().replace("*", ""));
+    static Stage getStage() {
+        return stage;
     }
 
     private static void setArgs(List<String> args1) {

@@ -1,5 +1,6 @@
 package editor;
 
+import com.sun.istack.internal.Nullable;
 import javafx.fxml.FXML;
 
 import javafx.geometry.Insets;
@@ -20,6 +21,8 @@ import javafx.scene.layout.VBox;
 
 import javafx.scene.paint.Color;
 
+import javafx.scene.web.HTMLEditor;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
@@ -32,11 +35,12 @@ import java.nio.charset.UnsupportedCharsetException;
 
 import java.util.List;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Controller {
 
     private String charset = "utf8";
-    private String original = "";
     private String[] supportedLang = {
             "Java",
             "PHP",
@@ -49,14 +53,15 @@ public class Controller {
             "txt"
     };
     @FXML private GridPane window;
-    @FXML private TextArea editor;
-    @FXML private TextField file;
     @FXML private Label status;
+    @FXML private Button read;
     @FXML private ComboBox<String> lang;
+    @FXML private TabPane tabs;
 
     public void initialize() {
         lang.getItems().addAll(supportedLang);
-        file.setOnAction(event -> read());
+        read.setOnAction(e -> read(null));
+        tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.ALL_TABS);
         arguments();
     }
 
@@ -81,19 +86,9 @@ public class Controller {
                 }
             });
         } else System.out.println("Combo off.");
-//        This code causes an exception
-//        if(getArgs().indexOf("--no-save-prompt") == -1) {
-//            editor.textProperty().addListener((observable, oldValue, newValue) -> {
-//                if (original.equals(editor.getText()))
-//                    setNotEdited();
-//                else
-//                    setEdited();
-//            });
-//        } else System.out.println("Save prompt off.");
         int x;
         if((x = getArgs().indexOf("-f")) != -1 || (x = getArgs().indexOf("--file")) != -1) {
             read(getArgs().get(x+1));
-            setStatus(getStatus() + " (from command line arguments)");
         }
         if((x = getArgs().indexOf("-c")) != -1 || (x = getArgs().indexOf("--charset")) != -1) {
             String charset = getArgs().get(x+1);
@@ -133,70 +128,84 @@ public class Controller {
     }
 
     public void save() {
-        String files = home(file.getText());
-        if (files != null) {
-            FileWriter fileWriter = null;
-            try {
-                fileWriter = new FileWriter(new File(files));
-                fileWriter.write(editor.getText());
-                setStatus("File saved: " + files);
-                setNotEdited();
-            } catch (IOException e) {
-                setStatus(e);
-            } finally {
-                if(fileWriter != null) {
-                    try {
-                        fileWriter.close();
-                    } catch (IOException e) {
-                        setStatus(e);
-                    }
+        File file = new File("/home/konrad/results.txt");
+        HTMLEditor editor = ((HTMLEditor)tabs.getSelectionModel().getSelectedItem().getContent());
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter(file);
+            fileWriter.write(stripHTMLTags(editor.getHtmlText()));
+            setStatus("File saved: " + file.getAbsolutePath());
+        } catch (IOException e) {
+            setStatus(e);
+        } finally {
+            if(fileWriter != null) {
+                try {
+                    fileWriter.close();
+                } catch (IOException e) {
+                    setStatus(e);
                 }
             }
         }
     }
 
-    private void read(String path) {
-        if(path != null && !path.equals("")) {
-            StringBuilder sb = new StringBuilder();
-            Scanner reader = null;
-            try {
-                reader = new Scanner(new File(home(path)), charset);
-                while (reader.hasNextLine())
-                    sb.append(reader.nextLine()).append("\n");
-                editor.setText(sb.toString());
-                file.setText(path);
-                original = sb.toString();
-                setStatus("File read: " + path);
-                setLang(path);
-            } catch (FileNotFoundException e) {
-                setStatus(e);
-            } finally {
-                if(reader != null)
-                    reader.close();
-            }
+    public void saveAs() {
+
+    }
+
+    private void read(@Nullable String fileName) {
+        File file;
+        if(fileName == null)
+            file = new FileChooser().showOpenDialog(getStage());
+        else
+            file = new File(fileName);
+        StringBuilder sb = new StringBuilder();
+        Scanner reader = null;
+        try {
+            reader = new Scanner(file, charset);
+            while (reader.hasNextLine())
+                sb.append("\n").append(reader.nextLine());
+            HTMLEditor editor = (HTMLEditor)addTab(file.getAbsolutePath()).getContent();
+            editor.setHtmlText(sb.toString().replaceFirst("[\n]", ""));
+            setLang(file.getName());
+            if(fileName == null)
+                setStatus("File read: " + file.getName());
+            else
+                setStatus("File read: " + file.getName() + " (from command line arguments)");
+        } catch (FileNotFoundException e) {
+            setStatus(e);
+        } finally {
+            if (reader != null)
+                reader.close();
         }
     }
 
-    public void read() {
-        if(file.getText() != null && !file.getText().equals("")) {
-            StringBuilder sb = new StringBuilder();
-            Scanner reader = null;
-            try {
-                reader = new Scanner(new File(home(file.getText())), charset);
-                while (reader.hasNextLine())
-                    sb.append("\n").append(reader.nextLine());
-                setTitle(home(file.getText()));
-                editor.setText(sb.toString().replaceFirst("[\n]", ""));
-                original = sb.toString();
-                setLang(file.getText());
-                setStatus("File read: " + file.getText());
-            } catch (FileNotFoundException e) {
-                setStatus(e);
-            } finally {
-                if (reader != null)
-                    reader.close();
-            }
+    public Tab addTab() {
+        HTMLEditor editor = new HTMLEditor();
+        Tab tab = new Tab("Untitled", editor);
+        tab.setContent(editor);
+        tabs.getTabs().add(tab);
+        return tab;
+    }
+
+    private String stripHTMLTags(String htmlText) {
+
+        Pattern pattern = Pattern.compile("<[^>]*>");
+        Matcher matcher = pattern.matcher(htmlText);
+        final StringBuffer sb = new StringBuffer(htmlText.length());
+        while(matcher.find()) {
+            matcher.appendReplacement(sb, " ");
         }
+        matcher.appendTail(sb);
+        return sb.toString().trim();
+
+    }
+
+    private Tab addTab(String title) {
+        HTMLEditor editor = new HTMLEditor();
+        Tab tab = new Tab(title, editor);
+        tab.setContent(editor);
+        tabs.getTabs().add(tab);
+        return tab;
     }
 
     private void setLang(String path) {
@@ -214,9 +223,6 @@ public class Controller {
             }
         }
     }
-    private String home(String url) {
-        return url.startsWith("~") ? url.replaceFirst("[~]", System.getProperty("user.home")) : url;
-    }
 
     private void setStatus(Exception e) {
         status.setText(e.getClass().getName() + ": " + e.getMessage());
@@ -228,20 +234,8 @@ public class Controller {
         status.setTextFill(Color.GREEN);
     }
 
-    private String getStatus() {
-        return status.getText();
-    }
-
-    private void setTitle(String file) {
-        Main.setTitle(file);
-    }
-
-    private void setEdited() {
-        Main.setEdited();
-    }
-
-    private void setNotEdited() {
-        Main.setNotEdited();
+    private Stage getStage() {
+        return Main.getStage();
     }
 
     private List<String> getArgs() {
